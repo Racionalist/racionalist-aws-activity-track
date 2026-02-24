@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  YourApp Cross-Account Read-Only Monitoring Role.
+  Grants YourApp secure read-only access to billing, usage, and resources.
+
+Parameters:
+
+  YourAppAWSAccountId:
+    Type: String
+    Description: AWS Account ID of YourApp (provided during onboarding)
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be a valid 12-digit AWS account ID.
+
+  ExternalId:
+    Type: String
+    Description: Unique External ID provided by YourApp
+    MinLength: 8
+
+  RoleName:
+    Type: String
+    Default: YourAppAccessRole
+    Description: Name of the IAM Role to create
+
+Resources:
+
+  YourAppAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Ref: RoleName
+      Description: Cross-account read-only role for YourApp monitoring
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                Fn::Sub: arn:aws:iam::${YourAppAWSAccountId}:root
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId:
+                  Ref: ExternalId
+
+      Policies:
+        - PolicyName: YourAppReadOnlyMonitoringPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+
+              - Effect: Allow
+                Action:
+                  - ce:GetCostAndUsage
+                  - ce:GetCostForecast
+                  - ce:GetDimensionValues
+                  - ce:GetReservationCoverage
+                  - ce:GetReservationUtilization
+                  - ce:GetSavingsPlansCoverage
+                  - ce:GetSavingsPlansUtilization
+                Resource: "*"
+
+
+              - Effect: Allow
+                Action:
+                  - cloudwatch:GetMetricData
+                  - cloudwatch:ListMetrics
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - ec2:Describe*
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - lambda:List*
+                  - lambda:Get*
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - s3:ListAllMyBuckets
+                  - s3:GetBucketLocation
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - rds:Describe*
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - ecs:List*
+                  - ecs:Describe*
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - eks:List*
+                  - eks:Describe*
+                Resource: "*"
+
+Outputs:
+
+  RoleArn:
+    Description: ARN of the created role (Provide this to YourApp)
+    Value:
+      Fn::GetAtt:
+        - YourAppAccessRole
+        - Arn
+
+  RoleName:
+    Description: Name of the created IAM role
+    Value:
+      Ref: YourAppAccessRole
