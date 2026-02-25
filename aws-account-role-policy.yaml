@@ -1,115 +1,121 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: >
-  YourApp Cross-Account Read-Only Monitoring Role.
-  Grants YourApp secure read-only access to billing, usage, and resources.
+Description: Grants Racionalist read-only monitoring access to this AWS account
 
 Parameters:
-
-  YourAppAWSAccountId:
-    Type: String
-    Description: AWS Account ID of YourApp (provided during onboarding)
-    AllowedPattern: '^\d{12}$'
-    ConstraintDescription: Must be a valid 12-digit AWS account ID.
-
   ExternalId:
     Type: String
-    Description: Unique External ID provided by YourApp
-    MinLength: 8
-
-  RoleName:
+    Description: Unique token provided by Racionalist. Do not change this value.
+  AccountId:
     Type: String
-    Default: YourAppAccessRole
-    Description: Name of the IAM Role to create
+    Description: Racionalist AWS Account ID. Do not change this value.
+    Default: '7801-0210-6089'  # your actual account ID hardcoded here
 
 Resources:
+  MonitoringPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: RacionalistActivityPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: BillingReadOnly
+            Effect: Allow
+            Action:
+              - ce:GetCostAndUsage
+              - ce:GetCostAndUsageWithResources
+              - ce:GetCostForecast
+              - ce:GetUsageForecast
+              - ce:GetDimensionValues
+              - ce:GetTags
+              - ce:GetReservationCoverage
+              - ce:GetReservationPurchaseRecommendation
+              - ce:GetReservationUtilization
+              - ce:GetSavingsPlansCoverage
+              - ce:ListCostAllocationTags
+              - budgets:ViewBudget
+              - aws-portal:ViewBilling
+              - aws-portal:ViewUsage
+              - cur:DescribeReportDefinitions
+              - pricing:GetProducts
+              - pricing:DescribeServices
+              - pricing:GetAttributeValues
+            Resource: '*'
+          - Sid: ResourceInventoryReadOnly
+            Effect: Allow
+            Action:
+              - ec2:Describe*
+              - elasticloadbalancing:Describe*
+              - autoscaling:Describe*
+              - s3:GetBucketLocation
+              - s3:GetBucketTagging
+              - s3:GetBucketVersioning
+              - s3:ListAllMyBuckets
+              - rds:Describe*
+              - rds:ListTagsForResource
+              - dynamodb:ListTables
+              - dynamodb:DescribeTable
+              - dynamodb:ListTagsOfResource
+              - lambda:ListFunctions
+              - lambda:GetFunction
+              - lambda:ListTags
+              - ecs:ListClusters
+              - ecs:DescribeClusters
+              - ecs:ListServices
+              - ecs:DescribeServices
+              - eks:ListClusters
+              - eks:DescribeCluster
+              - elasticache:DescribeCacheClusters
+              - sqs:ListQueues
+              - sqs:GetQueueAttributes
+              - sns:ListTopics
+              - sns:GetTopicAttributes
+              - cloudfront:ListDistributions
+              - route53:ListHostedZones
+              - apigateway:GET
+              - tag:GetResources
+              - tag:GetTagKeys
+              - tag:GetTagValues
+              - config:DescribeConfigurationRecorders
+              - config:GetResourceConfigHistory
+              - config:ListDiscoveredResources
+            Resource: '*'
+          - Sid: UsageAndMetricsReadOnly
+            Effect: Allow
+            Action:
+              - cloudwatch:GetMetricData
+              - cloudwatch:GetMetricStatistics
+              - cloudwatch:ListMetrics
+              - cloudwatch:DescribeAlarms
+              - logs:DescribeLogGroups
+              - logs:DescribeLogStreams
+              - logs:GetLogGroupFields
+              - logs:DescribeMetricFilters
+              - servicequotas:GetServiceQuota
+              - servicequotas:ListServiceQuotas
+              - servicequotas:ListServices
+              - health:DescribeEvents
+              - health:DescribeEventDetails
+              - health:DescribeAffectedEntities
+            Resource: '*'
 
-  YourAppAccessRole:
+  MonitoringRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName:
-        Ref: RoleName
-      Description: Cross-account read-only role for YourApp monitoring
+      RoleName: RacionalistActivityRole_ec2
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
-              AWS:
-                Fn::Sub: arn:aws:iam::${YourAppAWSAccountId}:root
+              AWS: !Sub 'arn:aws:iam::${AccountId}:root'
             Action: sts:AssumeRole
             Condition:
               StringEquals:
-                sts:ExternalId:
-                  Ref: ExternalId
-
-      Policies:
-        - PolicyName: YourAppReadOnlyMonitoringPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-
-              - Effect: Allow
-                Action:
-                  - ce:GetCostAndUsage
-                  - ce:GetCostForecast
-                  - ce:GetDimensionValues
-                  - ce:GetReservationCoverage
-                  - ce:GetReservationUtilization
-                  - ce:GetSavingsPlansCoverage
-                  - ce:GetSavingsPlansUtilization
-                Resource: "*"
-
-
-              - Effect: Allow
-                Action:
-                  - cloudwatch:GetMetricData
-                  - cloudwatch:ListMetrics
-                Resource: "*"
-
-              - Effect: Allow
-                Action:
-                  - ec2:Describe*
-                Resource: "*"
-
-              - Effect: Allow
-                Action:
-                  - lambda:List*
-                  - lambda:Get*
-                Resource: "*"
-
-              - Effect: Allow
-                Action:
-                  - s3:ListAllMyBuckets
-                  - s3:GetBucketLocation
-                Resource: "*"
-
-              - Effect: Allow
-                Action:
-                  - rds:Describe*
-                Resource: "*"
-
-              - Effect: Allow
-                Action:
-                  - ecs:List*
-                  - ecs:Describe*
-                Resource: "*"
-
-              - Effect: Allow
-                Action:
-                  - eks:List*
-                  - eks:Describe*
-                Resource: "*"
+                sts:ExternalId: !Ref ExternalId
+      ManagedPolicyArns:
+        - !Ref MonitoringPRacionalistActivityRole_ec2olicy
 
 Outputs:
-
   RoleArn:
-    Description: ARN of the created role (Provide this to YourApp)
-    Value:
-      Fn::GetAtt:
-        - YourAppAccessRole
-        - Arn
-
-  RoleName:
-    Description: Name of the created IAM role
-    Value:
-      Ref: YourAppAccessRole
+    Description: The ARN of the monitoring role - copy this back to Racionalist
+    Value: !GetAtt MonitoringRole.Arn
