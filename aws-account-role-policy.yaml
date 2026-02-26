@@ -8,7 +8,7 @@ Parameters:
   AccountId:
     Type: String
     Description: Racionalist AWS Account ID. Do not change this value.
-    Default: '7801-0210-6089'  # your actual account ID hardcoded here
+    Default: '7801-0210-6089'
 
 Resources:
   MonitoringPolicy:
@@ -113,9 +113,9 @@ Resources:
               StringEquals:
                 sts:ExternalId: !Ref ExternalId
       ManagedPolicyArns:
-        - !Ref MonitoringPRacionalistActivityRole_ec2olicy
+        - !Ref MonitoringPolicy
 
 Outputs:
   RoleArn:
-    Description: The ARN of the monitoring role - copy this back to Racionalist
+    Description: The ARN of the monitoring role
     Value: !GetAtt MonitoringRole.Arn
